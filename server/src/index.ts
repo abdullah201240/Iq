@@ -11,6 +11,7 @@ import { errorMiddleware } from './middleware/error'; // Adjust path as needed
 import cookieParser from 'cookie-parser'; // Import cookie-parser
 import compression from 'compression'; // Import compression
 import bodyParser from 'body-parser';
+import { NextFunction, Request, Response } from 'express';
 
 dotenv.config();
 
@@ -70,6 +71,9 @@ app.use(errorMiddleware);
 app.use('/upload', express.static('upload'));
 app.use('/uploadPdf', express.static('uploadPdf'));
 
+app.get("/", (req: Request, res: Response) => {
+  res.send("Express on Vercel");
+});
 
 
 // Connect to database
@@ -81,3 +85,5 @@ db.authenticate()
 app.listen(port, async () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
+
+export default app;
