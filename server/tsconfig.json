@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "resolveJsonModule": true,
+    "typeRoots": [
+      "./node_modules/@types",   // Default location for types
+      "./src/types"               // Custom types location (update this if your custom types are elsewhere)
+    ]
+  },
+  "include": [
+    "src/**/*",
+    "src/types/**/*.d.ts"        // Make sure TypeScript picks up your custom types
+  ],
+  "exclude": ["node_modules"]
+}
