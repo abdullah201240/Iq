@@ -8,7 +8,6 @@ export interface MainServicesAttributes {
   id: number;
   subTitle: string;
   logo: string;
-  image: string;
   videoLink: string;
   description: string;
   categoryId: number;
@@ -25,7 +24,6 @@ class MainServices extends Model<MainServicesAttributes, MainServicesCreationAtt
   public id!: number;
   public subTitle!: string;
   public logo!: string;
-  public image!: string;
   public videoLink!: string;
   public description!: string;
   public categoryId!: number;
@@ -54,10 +52,6 @@ MainServices.init(
       allowNull: false,
     },
     logo: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    image: {
       type: DataTypes.STRING,
       allowNull: false,
     },

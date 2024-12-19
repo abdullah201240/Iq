@@ -1,5 +1,5 @@
 import express from 'express';
-import { aboutUs, category, compressAllImages, createBestProject, createBlog, createClientHandler, createJob, createMainServicesCategory, createMainServicesSubCategory, createProject, createStory, deleteAbout, deleteBestProject, deleteBlog, deleteCategory, deleteClient, deleteJob, deleteMainServicesCategory, deleteMainServicesSubCategory, deleteServices, deleteStory, deleteTeam, deleteTestimonial, deleteWeAchieved, getAllMainServicesCategories, getMainServicesCategoryById, getMainServicesSubCategoryById, jobApplyById, services, Shortlistedemail, team, testimonial, updateAbout, updateApplicantStatus, updateJob, updateServices, updateTeam, updateTestimonial, updateWeAchieved, viewAbout, viewAboutById, viewBestProject, viewBlog, viewCategory, viewCategoryById, viewClient, viewContacts, viewJob, viewProjects, viewServices, viewServicesById, viewStory, viewTeam, viewTeamById, viewTestimonial, viewTestimonialById, viewWeAchieved, viewWeAchievedById, weAchieved } from '../controllers/adminController'; // Adjust the import path as needed
+import { aboutUs, category, compressAllImages, createBestProject, createBlog, createClientHandler, createJob, createMainServices, createMainServicesCategory, createMainServicesSubCategory, createProject, createStory, deleteAbout, deleteBestProject, deleteBlog, deleteCategory, deleteClient, deleteJob, deleteMainServices, deleteMainServicesCategory, deleteMainServicesSubCategory, deleteServices, deleteStory, deleteTeam, deleteTestimonial, deleteWeAchieved, getAllMainServicesCategories, getMainServices, getMainServicesCategoryById, getMainServicesSubCategory, getMainServicesSubCategoryById, jobApplyById, services, Shortlistedemail, team, testimonial, updateAbout, updateApplicantStatus, updateJob, updateServices, updateTeam, updateTestimonial, updateWeAchieved, viewAbout, viewAboutById, viewBestProject, viewBlog, viewCategory, viewCategoryById, viewClient, viewContacts, viewJob, viewProjects, viewServices, viewServicesById, viewStory, viewTeam, viewTeamById, viewTestimonial, viewTestimonialById, viewWeAchieved, viewWeAchievedById, weAchieved } from '../controllers/adminController'; // Adjust the import path as needed
 import { errorHandler } from '../error-handler';
 import authMiddleware from '../middleware/auth';
 import { compressImageMiddlewareSeo, uploadSeo } from '../middleware/uploadSeo';
@@ -234,7 +234,7 @@ router.post('/Shortlistedemail', authMiddleware, errorHandler(Shortlistedemail))
 router.post('/mainServicesCategory', authMiddleware,errorHandler(createMainServicesCategory));
 
 // Get all Categories 
-router.get('/mainServicesCategory',authMiddleware,errorHandler(getAllMainServicesCategories));
+router.get('/mainServicesCategory',errorHandler(getAllMainServicesCategories));
 
 // Get Category by ID
 router.get('/mainServicesCategory/:id',authMiddleware, errorHandler(getMainServicesCategoryById));
@@ -247,9 +247,24 @@ router.delete('/mainServicesCategory/:id',authMiddleware, errorHandler(deleteMai
 router.post('/mainServicesSubCategory',authMiddleware, errorHandler(createMainServicesSubCategory));
 
 // Get SubCategory by ID
-router.get('/mainServicesSubCategory/:id',authMiddleware, errorHandler(getMainServicesSubCategoryById) );
+router.get('/mainServicesSubCategory/:id', errorHandler(getMainServicesSubCategoryById) );
+router.get('/mainServicesSubCategory',authMiddleware, errorHandler(getMainServicesSubCategory) );
+
 
 // Delete SubCategory by ID
 router.delete('/mainServicesSubCategory/:id',authMiddleware, errorHandler(deleteMainServicesSubCategory) );
+
+router.post('/mainServices',authMiddleware,
+  uploadSeo.fields([ 
+    { name: 'logo', maxCount: 1 }
+  ]),
+  compressImageMiddlewareSeo,
+  errorHandler(createMainServices));
+
+  router.get('/mainServices',authMiddleware, errorHandler(getMainServices) );
+
+  router.delete('/mainServices/:id',authMiddleware, errorHandler(deleteMainServices) );
+
+
 
 export default router;

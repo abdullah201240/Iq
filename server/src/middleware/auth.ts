@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import AdminModel from "../models/admin"; // Adjust path as needed
+import Admin from "../models/admin"; // Adjust path as needed
 import { UnauthorizedException } from "../exceptions/unauthorized";
 import { ErrorCode } from "../exceptions/root";
-import { Admin } from "../models";
 
 const JWT_SECRET = process.env.JWT_SECRET_KEY || "12sawegg23grr434"; // Fallback to a hardcoded secret if not in env
 
@@ -23,7 +22,7 @@ const authMiddleware = async (req: Request, res: Response, next: NextFunction) =
     }
 
     // Find the admin using the decoded ID
-    const admin = await AdminModel.findOne({ where: { id: payload.id } });
+    const admin = await Admin.findOne({ where: { id: payload.id } });
 
     if (!admin) {
       return next(new UnauthorizedException('Admin not found or invalid token', null, ErrorCode.UNAUTHORIZED));

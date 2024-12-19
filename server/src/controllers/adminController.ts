@@ -29,6 +29,7 @@ import path from 'path';
 import sharp from 'sharp';
 import MainServicesCategory from '../models/mainServicesCategory';
 import MainServicesSubCategory from '../models/mainServicesSubCategory';
+import MainServices from '../models/mainServices';
 
 
 const JWT_SECRET = process.env.JWT_SECRET_KEY || "12sawegg23grr434"; // Fallback to a hardcoded secret if not in env
@@ -1696,13 +1697,40 @@ export const createMainServicesSubCategory = async (req: Request, res: Response)
     });
 };
 
+
+
+
+export const getMainServicesSubCategory = async (req: Request, res: Response) => {
+ 
+    const subCategories = await MainServicesSubCategory.findAll({
+      include: [
+        {
+          model: MainServicesCategory,
+          as: 'category', // Alias must match the one in associations
+          attributes: ['id', 'name'], // Fetch only relevant fields
+        },
+      ],
+    });
+
+    return res.status(200).json({
+      message: 'SubCategory fetched successfully.',
+      data: subCategories,
+    });
+  
+};
+
+
 // Get SubCategory by ID
 export const getMainServicesSubCategoryById = async (req: Request, res: Response) => {
   
     const { id } = req.params;
 
-    const subCategory = await MainServicesSubCategory.findByPk(id);
-
+    const subCategory = await MainServicesSubCategory.findAll({
+      where: {
+        categoryId: id,
+      },
+    });
+    
     if (!subCategory) {
       return res.status(404).json({ message: 'SubCategory not found.' });
     }
@@ -1729,4 +1757,80 @@ export const deleteMainServicesSubCategory = async (req: Request, res: Response)
 
     return res.status(200).json({ message: 'SubCategory deleted successfully.' });
   
+};
+
+
+// Create a new MainService
+export const createMainServices = async (req: Request, res: Response) => {
+  console.log(req.body)
+  
+    const { subTitle, videoLink, description, categoryId, subCategoryId } = req.body;
+
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+    const logo = files['logo'] ? files['logo'][0].path : ''; // Check if 'image' exists in req.files
+
+    // Check for required fields
+    if (!subTitle || !categoryId) {
+      return res.status(400).json({ message: 'SubTitle and Category ID are required.' });
+    }
+
+    // Create the new subcategory entry in the database
+    const newSubCategory = await MainServices.create({
+      subTitle,
+      videoLink,
+      description,
+      categoryId,
+      subCategoryId,
+      logo, 
+    });
+
+    // Return success response
+    return res.status(201).json({
+      message: 'MainService created successfully.',
+      data: newSubCategory,
+    });
+};
+
+export const getMainServices = async (req: Request, res: Response) => {
+ 
+  const mainServices = await MainServices.findAll({
+      include: [
+        {
+          model: MainServicesCategory,
+          as: 'category', // Alias must match the one in associations
+          attributes: ['id', 'name'], // Fetch only relevant fields
+          
+        },
+        {
+          model: MainServicesSubCategory,
+          as: 'subCategory', // Alias must match the one in associations
+          attributes: ['id', 'name'], // Fetch only relevant fields
+          
+        },
+      ],
+    });
+
+  return res.status(200).json({
+    message: 'Main Services fetched successfully.',
+    data: mainServices,
+  });
+
+};
+
+export const deleteMainServices = async (req: Request, res: Response) => {
+ 
+  const { id } = req.params;
+  console.log(id)
+
+  const services = await MainServices.findByPk(id);
+
+  if (!services) {
+    return res.status(404).json({ message: 'Services not found.' });
+  }
+
+  await services.destroy();
+
+  return res.status(200).json({ message: 'Services deleted successfully.' });
+
 };

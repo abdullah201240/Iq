@@ -17,7 +17,6 @@
   "include": [
     "src/**/*",
     "src/types/**/*.d.ts",        // Make sure TypeScript picks up your custom types
-    "./api/*.ts"
   ],
   "exclude": ["node_modules"]
 }

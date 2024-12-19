@@ -22,10 +22,10 @@ class MainServicesCategory
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
-  // Associations
-  public static associate() {
-    this.hasMany(MainServicesSubCategory, { foreignKey: 'categoryId', as: 'subCategories' });
-  }
+
+  public readonly category?: MainServicesSubCategory;
+
+ 
 }
 
 MainServicesCategory.init(
@@ -48,5 +48,4 @@ MainServicesCategory.init(
     timestamps: true,
   }
 );
-
 export default MainServicesCategory;
