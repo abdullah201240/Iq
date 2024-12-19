@@ -1770,13 +1770,13 @@ export const deleteMainServicesSubCategory = async (req: Request, res: Response)
 
 // Create a new MainService
 export const createMainServices = async (req: Request, res: Response) => {
-  console.log(req.body)
   
     const { subTitle, videoLink, description, categoryId, subCategoryId } = req.body;
 
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
     const logo = files['logo'] ? files['logo'][0].path : ''; // Check if 'image' exists in req.files
+    const backgroundImage = files['backgroundImage'] ? files['backgroundImage'][0].path : ''; // Check if 'image' exists in req.files
 
     // Check for required fields
     if (!subTitle || !categoryId) {
@@ -1791,6 +1791,7 @@ export const createMainServices = async (req: Request, res: Response) => {
       categoryId,
       subCategoryId,
       logo, 
+      backgroundImage
     });
 
     // Return success response

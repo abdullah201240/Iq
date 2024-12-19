@@ -11,10 +11,11 @@ import about from "@/app/assets/img/abg.webp"; // Correctly imported image
 import DOMPurify from 'dompurify';
 
 interface Service {
-  subTitle: string,
+  subTitle: string;
   logo: string;
   description: string;
   videoLink: string;
+  backgroundImage: string; // Make sure this is a string
 }
 
 export default function Page() {
@@ -23,21 +24,29 @@ export default function Page() {
   const name = Array.isArray(params?.name) ? decodeURIComponent(params.name[0]) : decodeURIComponent(params?.name || ""); // Decode and handle array case
   const [service, setService] = useState<Service | null>(null);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+
   const getYouTubeVideoId = (url: string | undefined): string => {
     if (!url) return "";
     const urlParams = new URLSearchParams(new URL(url).search);
     return urlParams.get('v') || ''; // Returns the video ID
   };
+
   useEffect(() => {
     if (id) {
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/mainServices/${id}/${name}`)
         .then((response) => response.json())
-        .then((data) => setService(data.data))
+        .then((data) => {
+          // Assuming the background image URL is part of the response
+          const fetchedService = data.data;
+          setService(fetchedService);
+        })
         .catch((error) => {
           console.error("Error fetching service data:", error);
         });
     }
   }, [id, name]);
+  const backgroundImageUrl =`${process.env.NEXT_PUBLIC_API_URL_IMAGE}/${service?.backgroundImage}`|| about.src; // Fallback
+
   return (
     <div>
       {/* Navbar Component */}
@@ -48,14 +57,10 @@ export default function Page() {
         title={String(name) || "Loading..."}
         subTitle={service?.subTitle || "Loading..."}
         backgroundImage={about.src}
+        />
 
-      />
-
-
-      <div
-        className="bg-cover bg-center py-16 px-4 sm:px-6 lg:px-8 "
-      >
-        <div className="sm:flex items-center max-w-screen-xl mx-auto bg-white bg-opacity-90 rounded-xl ">
+      <div className="bg-cover bg-center py-16 px-4 sm:px-6 lg:px-8">
+        <div className="sm:flex items-center max-w-screen-xl mx-auto bg-white bg-opacity-90 rounded-xl">
           {/* Left Content */}
           <div className="sm:w-1/2 p-5 sm:p-10 text-center sm:text-left bg-[#FFF6E980]">
             <p
@@ -63,11 +68,9 @@ export default function Page() {
               dangerouslySetInnerHTML={{
                 __html: service?.description
                   ? DOMPurify.sanitize(service.description)
-                  : '', // Fallback to an empty string if description is null or undefined
+                  : "", // Fallback to an empty string if description is null or undefined
               }}
             ></p>
-
-
           </div>
 
           {/* Right Image with Play Icon */}
@@ -78,7 +81,7 @@ export default function Page() {
                   src={`${process.env.NEXT_PUBLIC_API_URL_IMAGE}/${service.logo}`}
                   alt="IQ Architects"
                   className="rounded-xl"
-                  style={{ objectFit: 'cover' }} // Apply objectFit for proper scaling
+                  style={{ objectFit: "cover" }} // Apply objectFit for proper scaling
                   fill // Ensures the image fills the container
                   sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 25vw" // This sets the image size based on viewport width
                 />
@@ -118,7 +121,6 @@ export default function Page() {
                 width="100%"
                 height="100%"
                 src={`https://www.youtube.com/embed/${getYouTubeVideoId(service?.videoLink)}`}
-
                 title="YouTube video player"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -136,7 +138,6 @@ export default function Page() {
       </div>
       <Footer />
       <Whatsapp />
-
     </div>
   );
 }

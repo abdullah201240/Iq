@@ -14,6 +14,8 @@ export interface MainServicesAttributes {
   subCategoryId: number;
   categoryName?: string; // Virtual field for category name
   subCategoryName?: string; // Virtual field for subcategory name
+  backgroundImage?: string; // New field for background image
+
 }
 
 // Specify optional attributes
@@ -82,6 +84,10 @@ MainServices.init(
       },
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE',
+    },
+    backgroundImage: {
+      type: DataTypes.STRING, // Assuming it's a URL or file path
+      allowNull: true, // Make this field optional
     },
   },
   {

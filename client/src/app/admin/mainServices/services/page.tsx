@@ -19,6 +19,7 @@ export default function Home() {
         categoryId: '',
         subCategoryId: '', // Added subCategoryId for subcategory dropdown
         logo: null, // This will hold the logo file
+        backgroundImage: null,
         videoLink: '',
         description: '',
     });
@@ -172,7 +173,10 @@ export default function Home() {
             if (formData.logo) {
                 formPayload.append('logo', formData.logo); // Append logo file
             }
-
+            if (formData.backgroundImage) {
+                formPayload.append('backgroundImage', formData.backgroundImage); // Append logo file
+            }
+            
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/mainServices`, {
                 method: 'POST',
                 headers: {
@@ -191,6 +195,7 @@ export default function Home() {
                     categoryId: '',
                     subCategoryId: '',
                     logo: null,
+                    backgroundImage: null,
                     videoLink: '',
                     description: '',
                 });
@@ -233,6 +238,16 @@ export default function Home() {
                                 type="file"
                                 name="logo"
                                 onChange={(e) => handleChange(e.target.files![0], 'logo')} // Handle file input
+                                className="w-full p-4 rounded-md border border-gray-400 focus:border-[#F17B21] focus:ring-2 focus:ring-[#F17B21] focus:outline-none placeholder-gray-600 text-gray-900"
+                            />
+                            <label htmlFor="backgroundImage" className="block text-gray-900 font-semibold mb-2">
+                            Background Image
+                            </label>
+                            <input
+                                id="backgroundImage"
+                                type="file"
+                                name="backgroundImage"
+                                onChange={(e) => handleChange(e.target.files![0], 'backgroundImage')} // Handle file input
                                 className="w-full p-4 rounded-md border border-gray-400 focus:border-[#F17B21] focus:ring-2 focus:ring-[#F17B21] focus:outline-none placeholder-gray-600 text-gray-900"
                             />
                         </div>

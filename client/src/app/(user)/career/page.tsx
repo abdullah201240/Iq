@@ -1,20 +1,36 @@
-import CareerTitle from '@/components/CareerTitle'
-import Footer from '@/components/Footer'
-import JobList from '@/components/JobList'
-import Navbar from '@/components/Navbar'
-import Whatsapp from '@/components/Whatsapp'
-import WhyWorkwithUs from '@/components/WhyWorkwithUs'
-import React from 'react'
+"use client";
+import React, { useRef } from 'react';
+import CareerTitle from '@/components/CareerTitle';
+import Footer from '@/components/Footer';
+import JobList from '@/components/JobList';
+import Navbar from '@/components/Navbar';
+import Whatsapp from '@/components/Whatsapp';
+import WhyWorkwithUs from '@/components/WhyWorkwithUs';
 
-export default function page() {
+export default function Page() {
+  // Explicitly type the ref as a reference to a div element
+  const jobListRef = useRef<HTMLDivElement>(null);
+
+  // Function to handle the scrolling behavior
+  const handleJobOpeningsClick = () => {
+    if (jobListRef.current) {
+      jobListRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div>
-        <Navbar/>
-      <CareerTitle/>
-      <WhyWorkwithUs/>
-      <JobList/>
+      <Navbar />
+      <CareerTitle onJobOpeningsClick={handleJobOpeningsClick} />
+      <WhyWorkwithUs />
+      
+      {/* Pass the ref to JobList */}
+      <div ref={jobListRef}>
+        <JobList />
+      </div>
+
       <Whatsapp />
-      <Footer/>
+      <Footer />
     </div>
-  )
+  );
 }

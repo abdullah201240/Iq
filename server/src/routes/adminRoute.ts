@@ -254,12 +254,12 @@ router.get('/mainServicesSubCategory',authMiddleware, errorHandler(getMainServic
 // Delete SubCategory by ID
 router.delete('/mainServicesSubCategory/:id',authMiddleware, errorHandler(deleteMainServicesSubCategory) );
 
-router.post('/mainServices',authMiddleware,
+router.post('/mainServices',
   uploadSeo.fields([ 
-    { name: 'logo', maxCount: 1 }
+    { name: 'logo', maxCount: 1 },
+    { name: 'backgroundImage', maxCount: 1 }
   ]),
-  compressImageMiddlewareSeo,
-  errorHandler(createMainServices));
+    errorHandler(createMainServices));
 
   router.get('/mainServices',authMiddleware, errorHandler(getMainServices) );
 

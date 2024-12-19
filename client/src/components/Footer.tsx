@@ -60,7 +60,7 @@ export default function Footer() {
                     </svg>
                   </Link>
                   {/* LinkedIn Icon */}
-                  <Link href="https://www.linkedin.com/company/iq-architects" className="inline-flex items-center justify-center h-8 w-8 border border-white rounded-full mr-3 hover:text-[#F17B21] hover:border-[#F17B21]"
+                  <Link href="https://www.linkedin.com/company/iq-architects-ltd/" className="inline-flex items-center justify-center h-8 w-8 border border-white rounded-full mr-3 hover:text-[#F17B21] hover:border-[#F17B21]"
                     aria-label="LinkedIn"
                   >
                     <FaLinkedin className="w-4 h-4 fill-current" />
