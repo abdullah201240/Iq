@@ -4,54 +4,54 @@ module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.createTable('jobs', {
       id: {
-        type: DataTypes.INTEGER,
+        type: Sequelize.DataTypes.INTEGER,  // Use Sequelize.DataTypes
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
       },
       deadline: {
-        type: DataTypes.STRING,
+        type: Sequelize.DataTypes.STRING,  // Use Sequelize.DataTypes
         allowNull: false,
       },
       position: {
-        type: DataTypes.STRING,
+        type: Sequelize.DataTypes.STRING,  // Use Sequelize.DataTypes
         allowNull: false,
       },
       location: {
-        type: DataTypes.STRING,
+        type: Sequelize.DataTypes.STRING,  // Use Sequelize.DataTypes
         allowNull: false,
       },
       phone: {
-        type: DataTypes.STRING,
+        type: Sequelize.DataTypes.STRING,  // Use Sequelize.DataTypes
         allowNull: false,
       },
       description: {
-        type: DataTypes.TEXT,
+        type: Sequelize.DataTypes.TEXT,  // Use Sequelize.DataTypes
         allowNull: false,
       },
       salary: {
-        type: DataTypes.STRING,
+        type: Sequelize.DataTypes.STRING,  // Use Sequelize.DataTypes
         allowNull: false,
       },
       vacancies: {
-        type: DataTypes.STRING,
+        type: Sequelize.DataTypes.STRING,  // Use Sequelize.DataTypes
         allowNull: false,
       },
       keyResponsibilities: {
-        type: DataTypes.TEXT,
+        type: Sequelize.DataTypes.TEXT,  // Use Sequelize.DataTypes
         allowNull: false,
       },
       skillsExperience: {
-        type: DataTypes.TEXT,
+        type: Sequelize.DataTypes.TEXT,  // Use Sequelize.DataTypes
         allowNull: false,
       },
       createdAt: {
-        type: DataTypes.DATE,
+        type: Sequelize.DataTypes.DATE,  // Use Sequelize.DataTypes
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
       updatedAt: {
-        type: DataTypes.DATE,
+        type: Sequelize.DataTypes.DATE,  // Use Sequelize.DataTypes
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },

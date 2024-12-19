@@ -1,11 +1,11 @@
 'use client';
 import React from 'react'
-import { FaWhatsapp } from 'react-icons/fa'; // Import WhatsApp icon from react-icons
+import { FaWhatsapp } from 'react-icons/fa'; 
 export default function Whatsapp() {
   return (
     <div>
         <a 
-        href="https://wa.me/+8801618004000" // Replace with your actual WhatsApp number
+        href="https://wa.me/+8801618004000" 
         target="_blank" 
         rel="noopener noreferrer" 
         className="whatsapp-icon"

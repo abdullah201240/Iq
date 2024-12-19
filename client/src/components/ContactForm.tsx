@@ -117,9 +117,8 @@ export default function ContactForm() {
           <h3 className="text-black text-sm font-bold">Need Any Help?</h3>
           <h2 className="mt-2 text-4xl text-black font-bold">Get in touch with us</h2>
           <p className="mt-4 text-gray-600 leading-relaxed">
-            Lorem Ipsum is simply dummy text of the printing and typesetting industry.
-            Lorem Ipsum has been the industry&apos;s standard dummy text ever since the
-            1500s.
+          Looking for premier interior and architectural services in Dhaka, Bangladesh? 
+          IQ Architects Ltd is the best interior and architectural services in Bangladesh Since 2014, we’ve been your trusted partner. Get in touch for a consultation today
           </p>
           <ul className="mt-6 space-y-4 text-gray-600">
             <li className="flex items-start">

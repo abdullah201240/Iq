@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import about from "@/app/assets/img/abg.webp"; // Correctly imported image
+import Whatsapp from '@/components/Whatsapp';
 
 
 export default function Page() {
@@ -92,7 +93,7 @@ export default function Page() {
                     ))}
                 </div>
             </div>
-
+            <Whatsapp />
             <Footer />
         </div>
     );

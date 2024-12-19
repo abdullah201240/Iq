@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar'; // Ensure the component name is correc
 import ServicesTitle from '@/components/ServicesTitle';
 import React, { useEffect, useState } from 'react';
 import about from "@/app/assets/img/abg.webp"; // Correctly imported image
+import Whatsapp from '@/components/Whatsapp';
 
 export default function Page() {
   const [storyData, setStoryData] = useState<{ link: string }[]>([]); // Change type to handle array of objects with link
@@ -88,6 +89,7 @@ export default function Page() {
           })}
         </div>
       </div>
+      <Whatsapp/>
       <Footer/>
     </div>
   );

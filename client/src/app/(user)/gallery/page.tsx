@@ -7,6 +7,7 @@ import ServicesTitle from "@/components/ServicesTitle";
 import Image from "next/image";
 
 import about from "@/app/assets/img/Gallery.webp";
+import Whatsapp from "@/components/Whatsapp";
 
 interface ProjectImage {
   id: number;
@@ -136,7 +137,7 @@ export default function Page() {
           </div>
         </div>
       )}
-
+      <Whatsapp />
       <Footer />
     </div>
   );
