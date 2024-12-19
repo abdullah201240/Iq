@@ -7,7 +7,7 @@ interface DBConfig {
   password?: string;  // Allow password to be undefined instead of null
   database: string;
   host: string;
-  dialect: string;
+  dialect: 'mysql' | 'postgres' | 'sqlite' | 'mssql';  // Specify allowed dialect types for safety
 }
 
 // Define the full structure of the config object

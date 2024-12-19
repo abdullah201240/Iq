@@ -1,15 +1,30 @@
-import { DataTypes, Model } from 'sequelize';
-import db from '../config/sequelize';
+import { DataTypes, Model, Optional } from 'sequelize';
+import db from '../config/sequelize'; // Ensure this is your Sequelize instance
 import MainServicesCategory from './mainServicesCategory';
 
-class MainServicesSubCategory extends Model {
+// Define the attributes for the model
+interface MainServicesSubCategoryAttributes {
+  id: number;
+  name: string;
+  categoryId: number; // Foreign key
+}
+
+interface MainServicesSubCategoryCreationAttributes
+  extends Optional<MainServicesSubCategoryAttributes, 'id'> {}
+
+class MainServicesSubCategory
+  extends Model<MainServicesSubCategoryAttributes, MainServicesSubCategoryCreationAttributes>
+  implements MainServicesSubCategoryAttributes
+{
   public id!: number;
   public name!: string;
   public categoryId!: number;
+
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
 
+// Initialize the model
 MainServicesSubCategory.init(
   {
     id: {
@@ -28,12 +43,12 @@ MainServicesSubCategory.init(
     },
   },
   {
-    sequelize: db,
+    sequelize: db, // Ensure `db` is correctly initialized
     modelName: 'MainServicesSubCategory',
     tableName: 'main_services_sub_category',
     timestamps: true,
   }
 );
-MainServicesSubCategory.belongsTo(MainServicesCategory, { foreignKey: 'categoryId', as: 'category' });
+
 
 export default MainServicesSubCategory;

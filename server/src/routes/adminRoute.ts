@@ -3,7 +3,7 @@ import { aboutUs, category, compressAllImages, createBestProject, createBlog, cr
 import { errorHandler } from '../error-handler';
 import authMiddleware from '../middleware/auth';
 import { compressImageMiddlewareSeo, uploadSeo } from '../middleware/uploadSeo';
-import { convertToWebP, uploadMul } from '../middleware/uploadMiddleware';
+import { uploadMul } from '../middleware/uploadMiddleware';
 
 const router = express.Router();
 
@@ -234,7 +234,7 @@ router.post('/Shortlistedemail', authMiddleware, errorHandler(Shortlistedemail))
 router.post('/mainServicesCategory', authMiddleware,errorHandler(createMainServicesCategory));
 
 // Get all Categories 
-router.get('/mainServicesCategory',errorHandler(getAllMainServicesCategories));
+router.get('/mainServicesCategory',authMiddleware,errorHandler(getAllMainServicesCategories));
 
 // Get Category by ID
 router.get('/mainServicesCategory/:id',authMiddleware, errorHandler(getMainServicesCategoryById));

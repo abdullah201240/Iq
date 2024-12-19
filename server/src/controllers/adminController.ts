@@ -30,7 +30,7 @@ import sharp from 'sharp';
 import MainServicesCategory from '../models/mainServicesCategory';
 import MainServicesSubCategory from '../models/mainServicesSubCategory';
 import MainServices from '../models/mainServices';
-
+import '../models/associations';
 
 const JWT_SECRET = process.env.JWT_SECRET_KEY || "12sawegg23grr434"; // Fallback to a hardcoded secret if not in env
 
@@ -1630,16 +1630,24 @@ export const createMainServicesCategory = async (req: Request, res: Response) =>
   
 };
 // Get all Categories with SubCategories
-export const getAllMainServicesCategories = async (_req: Request, res: Response) => {
-
-    const categories = await MainServicesCategory.findAll();
+export const getAllMainServicesCategories = async (_req: Request, res: Response): Promise<Response> => {
+  
+    // Fetch all main service categories with associated subcategories
+    const categories = await MainServicesCategory.findAll({
+      include: [
+        {
+          association: 'subCategories', // Ensure this matches your Sequelize association name
+          attributes: ['id', 'name'], // Fetch only relevant fields
+        },
+      ],
+    });
 
     return res.status(200).json({
       message: 'Categories fetched successfully.',
       data: categories,
     });
-  
 };
+
 // Get Category by ID with SubCategories
 export const getMainServicesCategoryById = async (req: Request, res: Response) => {
   

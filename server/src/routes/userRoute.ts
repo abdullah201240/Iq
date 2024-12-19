@@ -1,5 +1,5 @@
 import express from 'express';
-import {  viewAboutById, viewTeam, viewTestimonial,viewServices, viewServicesByid, contacts, viewAllProjectImage, viewWeAchieved, viewClient, viewBestProject, viewStory, viewBlog, viewBlogByid, viewJob, viewJobByid, applyJob, viewProjectCategory, viewProject, viewProjectById } from '../controllers/userController'; // Adjust the import path as needed
+import {  viewAboutById, viewTeam, viewTestimonial,viewServices, viewServicesByid, contacts, viewAllProjectImage, viewWeAchieved, viewClient, viewBestProject, viewStory, viewBlog, viewBlogByid, viewJob, viewJobByid, applyJob, viewProjectCategory, viewProject, viewProjectById, getMainServices, getAllMainServicesCategories, getMainServicesById } from '../controllers/userController'; // Adjust the import path as needed
 import { errorHandler } from '../error-handler';
 import { uploadPdf } from '../middleware/uploadPdf';
 
@@ -32,6 +32,8 @@ router.get('/projectCategory', errorHandler(viewProjectCategory));
 
 router.get('/projectname', errorHandler(viewProject));
 router.get('/viewProjectById', errorHandler(viewProjectById));
+router.get('/mainServicesCategory',errorHandler(getAllMainServicesCategories));
+router.get('/mainServices/:id/:name', errorHandler(getMainServicesById));
 
 
 export default router;

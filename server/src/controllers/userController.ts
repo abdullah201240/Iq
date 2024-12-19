@@ -21,6 +21,10 @@ import { Op } from 'sequelize';
 import cache from './cache';
 import ProjectCategory from '../models/projectCategory';
 import Projects from '../models/project';
+import MainServices from '../models/mainServices';
+import MainServicesCategory from '../models/mainServicesCategory';
+import MainServicesSubCategory from '../models/mainServicesSubCategory';
+import '../models/associations';
 
 // View by ID API (Fetch a specific About record by ID)
 export const viewAboutById = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
@@ -427,5 +431,90 @@ export const viewProjectById = async (req: Request, res: Response, next: NextFun
   }
 };
 
+export const getAllMainServicesCategories = async (req: Request, res: Response): Promise<Response> => {
+  
+  // Fetch all main service categories with associated subcategories
+  const categories = await MainServicesCategory.findAll({
+    include: [
+      {
+        association: 'subCategories', // Ensure this matches your Sequelize association name
+        attributes: ['id', 'name'], // Fetch only relevant fields
+      },
+    ],
+  });
+
+  return res.status(200).json({
+    message: 'Categories fetched successfully.',
+    data: categories,
+  });
+};
+
+
+export const getMainServices = async (req: Request, res: Response) => {
+ 
+  const mainServices = await MainServices.findAll({
+      include: [
+        {
+          model: MainServicesCategory,
+          as: 'category', // Alias must match the one in associations
+          attributes: ['id', 'name'], // Fetch only relevant fields
+          
+        },
+        {
+          model: MainServicesSubCategory,
+          as: 'subCategory', // Alias must match the one in associations
+          attributes: ['id', 'name'], // Fetch only relevant fields
+          
+        },
+      ],
+    });
+
+  return res.status(200).json({
+    message: 'Main Services fetched successfully.',
+    data: mainServices,
+  });
+
+};
+
+
+export const getMainServicesById = async (req: Request, res: Response) => {
+  const { id, name } = req.params;
+
+console.log(id)
+console.log(name)
+
+    const mainService = await MainServices.findOne({
+      include: [
+        {
+          model: MainServicesCategory,
+          as: 'category', // Alias must match the one in associations
+          attributes: ['id', 'name'],
+          where: {
+            name: id, // Match category name
+          },
+        },
+        {
+          model: MainServicesSubCategory,
+          as: 'subCategory', // Alias must match the one in associations
+          attributes: ['id', 'name'],
+          where: {
+            name: name, // Match subcategory name
+          },
+        },
+      ],
+    });
+
+    if (!mainService) {
+      return res.status(404).json({
+        message: 'No main service found for the provided category and subcategory.',
+      });
+    }
+
+    return res.status(200).json({
+      message: 'Main Service fetched successfully.',
+      data: mainService,
+    });
+  
+};
 
 
