@@ -9,7 +9,7 @@ const router = express.Router();
 router.post('/createAdmin',[authMiddleware], errorHandler(createAdmin));
 router.post('/login', errorHandler(login));
 
-router.get('/me',[authMiddleware],errorHandler(me));
+router.get('/me',authMiddleware,errorHandler(me));
 router.get('/logout', errorHandler(logout));
 
 // Route for deleting an About record by ID
