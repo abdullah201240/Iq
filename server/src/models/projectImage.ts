@@ -44,7 +44,7 @@ ProjectImage.init(
   }
 );
 
-// ProjectImage.belongsTo(Projects, { foreignKey: 'projectId' });
+
 
 
 

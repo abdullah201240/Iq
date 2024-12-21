@@ -25,12 +25,11 @@ export default function AdminProject() {
         name: "",
         category: "",
     });
-    const [files, setFiles] = useState([]);
 
-    // const [files, setFiles] = useState({
-    //     themeImage: null as File | null,
-    //     images: [] as File[],
-    // });
+    const [files, setFiles] = useState({
+        themeImage: null as File | null,
+        images: [] as File[],
+    });
     const [projects, setProjects] = useState<Project[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
@@ -41,7 +40,7 @@ export default function AdminProject() {
         const fetchProjects = async () => {
             const storedUserInfo = localStorage.getItem("sessionToken");
             if (!storedUserInfo) {
-                router.push("/admin/login");
+                // router.push("/admin/login");
                 return;
             }
 
@@ -54,7 +53,7 @@ export default function AdminProject() {
                 });
 
                 if (!response.ok) {
-                    router.push("/admin/login");
+                    // router.push("/admin/login");
                     toast.error("Failed to fetch projects.");
                     console.error("Error fetching projects");
                 } else {
@@ -70,7 +69,7 @@ export default function AdminProject() {
         const fetchCategories = async () => {
             const storedUserInfo = localStorage.getItem("sessionToken");
             if (!storedUserInfo) {
-                router.push("/admin/login");
+                // router.push("/admin/login");
                 return;
             }
 
@@ -83,7 +82,7 @@ export default function AdminProject() {
                 });
 
                 if (!response.ok) {
-                    router.push("/admin/login");
+                    // router.push("/admin/login");
                     toast.error("Failed to fetch category.");
                     console.error("Error fetching category");
                 } else {
@@ -119,11 +118,12 @@ export default function AdminProject() {
             } else if (name === "additionalImages") {
                 setFiles((prev) => ({
                     ...prev,
-                    additionalImages: Array.from(files), // Handle multiple additional images
+                    images: Array.from(files), // Handle multiple additional images
                 }));
             }
         }
     };
+
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -134,60 +134,54 @@ export default function AdminProject() {
             router.push("/admin/login");
             return;
         }
-        // if (!formData.name || !formData.category || !files.themeImage) {
-        //     toast.error("Please fill in all required fields.");
-        //     return;
-        // }
+
+        if (!formData.name || !formData.category || !files.themeImage) {
+            toast.error("Please fill in all required fields.");
+            return;
+        }
 
         const form = new FormData();
         form.append("name", formData.name);
         form.append("categoryId", formData.category);
 
-
-        // if (files.themeImage) {
-        //     form.append("themeImage", files.themeImage);
-        // }
-        for (const file of files) {
-            console.log(file)
-            form.append('images', file)
-          }
-        // files.images.forEach((file) => {
-        //     form.append("images", file);
-        // });
-
-        for (const [key, value] of form.entries()) {
-            console.log(key, value);
+        if (files.themeImage) {
+            form.append("themeImage", files.themeImage);
         }
 
+        // Append additional images to FormData
+        files.images.forEach((file) => {
+            form.append("images", file);
+        });
 
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/createProject`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${storedUserInfo}`,
-                     'Content-Type': 'multipart/form-data',
+                    // No need to set Content-Type manually when using FormData
                 },
                 body: form,
             });
-           
-            const responseBody = await response.text(); // Get the response body as text
-            console.error("Server Response:", responseBody);
+
+            const responseBody = await response.json();
+            console.log("Server Response:", responseBody);
+
             if (!response.ok) {
                 toast.error("Failed to add project.");
                 console.error("Error adding project");
             } else {
                 toast.success("Project added successfully!");
                 setFormData({ name: "", category: "" }); // Reset form
-                // setFiles({ themeImage: null, images: [] }); // Reset file input
-               
-                const newProject = await response.json();
-                setProjects((prev) => [...prev, newProject]);
+                setFiles({ themeImage: null, images: [] }); // Reset file input
+
+                setProjects((prev) => [...prev, responseBody.project]); // Assuming responseBody contains the newly created project
             }
         } catch (error) {
             toast.error("Error submitting form.");
             console.error("Error submitting form:", error);
         }
     };
+
 
 
     const handleDelete = (id: number) => {
@@ -205,7 +199,7 @@ export default function AdminProject() {
         }
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/category/${categoryToDelete}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/projects/${categoryToDelete}`, {
                 method: 'DELETE',
                 headers: {
                     Authorization: `Bearer ${storedUserInfo}`,
@@ -213,9 +207,9 @@ export default function AdminProject() {
             });
 
             if (!response.ok) {
-                toast.error("Failed to delete category.");
+                toast.error("Failed to delete Project.");
             } else {
-                toast.success("Category deleted successfully!");
+                toast.success("Project deleted successfully!");
                 setProjects((prev) => prev.filter((project) => project.id !== categoryToDelete));
             }
         } catch {
@@ -357,7 +351,7 @@ export default function AdminProject() {
                                                 </td>
                                                 <td className="px-4 py-2 border text-center">
                                                     <div className="grid grid-cols-4 gap-2 justify-center">
-                                                        {project.project.length > 0 ? (
+                                                        {project.project && project.project.length > 0 ? (
                                                             project.project.map((image, index) => {
                                                                 const imageUrl = `${process.env.NEXT_PUBLIC_API_URL_IMAGE}/upload/${image.imageName}`;
                                                                 return (
@@ -384,6 +378,7 @@ export default function AdminProject() {
 
 
 
+
                                                 <td className="px-4 py-2 border text-center">
                                                     <button
                                                         onClick={() => handleDelete(project.id)}
@@ -407,7 +402,7 @@ export default function AdminProject() {
                 isOpen={isModalOpen}
                 onConfirm={confirmDelete}
                 onCancel={cancelDelete}
-                message="Are you sure you want to delete this category?"
+                message="Are you sure you want to delete this project?"
             />
         </div>
     );

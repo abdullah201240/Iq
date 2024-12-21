@@ -6,7 +6,7 @@ const generateFakeProjectImages = (num) => {
   for (let i = 1; i <= num; i++) {
     projectImages.push({
       imageName: `${i}.webp`,  // imageName will follow the pattern 1.webp, 2.webp, etc.
-      projectId: 1,  // Random projectId between 1 and 100 (adjust based on your projects)
+      projectId: 4,  // Random projectId between 1 and 100 (adjust based on your projects)
       createdAt: new Date(),
       updatedAt: new Date(),
     });

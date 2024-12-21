@@ -19,7 +19,7 @@ const app = express();
 const port = parseInt(process.env.PORT || '8080', 10); // Ensure port is a number
 
 // Use morgan to log HTTP requests
-app.use(morgan('combined')); // You can change the format as per your needs
+app.use(morgan('combined'));
 app.use(bodyParser.json());
 
 // Helmet for setting secure HTTP headers

@@ -23,6 +23,7 @@ class Projects extends Model<ProjectAttributes, ProjectCreationAttributes> imple
   // Relationships
   public readonly category?: ProjectCategory;
   public readonly images?: ProjectImage[];
+  project: any;
 }
 
 Projects.init(
@@ -54,13 +55,6 @@ Projects.init(
   }
 );
 
-Projects.hasMany(ProjectImage, { foreignKey: 'projectId', as: 'project' });
-
-// Associations
-Projects.belongsTo(ProjectCategory, {
-  foreignKey: 'categoryId',
-  as: 'category',
-});
 
 
 

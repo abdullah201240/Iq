@@ -821,77 +821,68 @@ export const viewCategoryById = async (req: Request, res: Response, next: NextFu
 
 
 
-export const createProject = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+export const createProject = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  
+    // Validate request body
+    const validation = projectSchema.safeParse(req.body);
+    if (!validation.success) {
+      return next(new Error('Validation Error: ' + JSON.stringify(validation.error.errors)));
+    }
 
-  // Validate the incoming request body
-  const validation = projectSchema.safeParse(req.body);
-  if (!validation.success) {
-    return next(new UnprocessableEntity(validation.error.errors, 'Validation Error'));
-  }
+    const { name, categoryId } = req.body;
 
+    // Type assertion for req.files
+    const files = req.files as {
+      [fieldname: string]: Express.Multer.File[];
+    };
 
+    // Extract theme image and additional images
+    let themeImage = '';
+    const additionalFiles: Express.Multer.File[] = [];
 
-  const { name, categoryId } = req.body;
+    if (files['themeImage'] && files['themeImage'].length > 0) {
+      themeImage = files['themeImage'][0].path;
+    }
 
-  // Ensure `req.files` is either an object or array, and handle accordingly
-  const files = req.files;
+    if (files['images'] && files['images'].length > 0) {
+      additionalFiles.push(...files['images']);
+    }
 
-  if (!files) {
-    return next(new Error('No files uploaded'));
-  }
+    // Create project entry
+    const project = await Projects.create({
+      name,
+      themeImage,
+      categoryId,
+    });
 
-  let themeImage = '';
-  let additionalFiles: Express.Multer.File[] = [];
+    // Create project images entries if additional images exist
+    if (additionalFiles.length > 0) {
+      const imageRecords = additionalFiles.map((file) => ({
+        imageName: file.filename,
+        projectId: project.id,
+      }));
 
-  // Check if `files` is an array (for multiple files in one field)
-  if (Array.isArray(files)) {
-    themeImage = files.length > 0 ? files[0].path : '';  // First image as theme image
-    additionalFiles = files.slice(1);  // Rest as additional images
-  } else {
-    // Check if it's an object (for multiple fields with different file names)
-    const themeImageFile = files['themeImage'] as Express.Multer.File[] | undefined;
-    const additionalFilesField = files['images'] as Express.Multer.File[] | undefined;
+      await ProjectImage.bulkCreate(imageRecords);
+    }
 
-    themeImage = themeImageFile && themeImageFile.length > 0 ? themeImageFile[0].path : '';  // Single theme image
-    additionalFiles = additionalFilesField || [];  // Multiple additional images (if any)
-  }
+    // Invalidate project cache
+    cache.del('projects');
 
-  // Create the new project
-  const project = await Projects.create({
-    name,
-    themeImage,
-    categoryId,
-  });
-
-  // If there are additional images, bulk insert them
-  if (additionalFiles.length > 0) {
-    const imageRecords = additionalFiles.map((file) => ({
-      imageName: file.filename,  // Assuming multer provides the filename
-      projectId: project.id,     // Associate images with the project
-    }));
-
-    await ProjectImage.bulkCreate(imageRecords);
-  }
-  // Invalidate the cache for all projects
-  cache.del('projects');
-  // Respond with the created project and a success message
-  res.status(201).json({
-    message: 'Project created successfully',
-    project,
-    images: additionalFiles.map((file) => file.filename),
+    // Send response
+    res.status(201).json({
+      message: 'Project created successfully',
+      project: {
+          ...project, // your project data
+          project: additionalFiles.map((file) => ({
+              imageName: file.filename, // Assuming these are image file names
+          })),
+      },
+      images: additionalFiles.map((file) => file.filename),
   });
 };
 
-export const viewProjects = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-  // Check if projects are cached
-  const cachedProjects = cache.get('projects');
-  if (cachedProjects) {
-    return res.status(200).json({
-      message: 'Projects retrieved successfully (from cache)',
-      data: cachedProjects,
-    });
-  }
 
+export const viewProjects = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   // Fetch all projects with associated project images and categories
   const projects = await Projects.findAll({
     include: [
@@ -904,14 +895,13 @@ export const viewProjects = async (req: Request, res: Response, next: NextFuncti
         model: ProjectImage,
         as: 'project', // Alias for the related category
         attributes: ['imageName'], // Only include the name from ProjectCategory
+        limit: 10,
       },
 
 
     ],
   });
 
-  // Cache the fetched projects
-  cache.set('projects', projects);
   // Send the response
   res.status(200).json({
     message: 'Projects retrieved successfully',
@@ -919,6 +909,89 @@ export const viewProjects = async (req: Request, res: Response, next: NextFuncti
   });
 
 };
+
+
+
+
+
+export const deleteProject = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+  const projectId = req.params.id;
+
+ 
+    // Find the project with its associated images
+    const data = await Projects.findOne({
+      where: { id: projectId },
+      include: [
+        {
+          model: ProjectImage,
+          as: 'project', // Alias for the associated images
+          attributes: ['imageName'], // Only retrieve the image names
+        },
+      ],
+    });
+
+    // If project not found, return 404
+    if (!data) {
+      return res.status(404).json({
+        message: 'Project not found',
+      });
+    }
+
+    console.log('Project found:', data);
+
+    // Check if project has images
+    if (!data.project || data.project.length === 0) {
+      console.log('No images associated with this project');
+    } else {
+      console.log('Images associated with this project:', data.project);
+    }
+
+    // Define the path to the image folder
+    const imageFolderPath = path.join(__dirname, '../../upload'); // Adjust folder path as needed
+    console.log('Image folder path:', imageFolderPath);
+    console.log('Full image folder path:', path.resolve(imageFolderPath));
+
+    const imageDeletePromises = data.project?.map((image: ProjectImage) => {
+      const imagePath = path.join(imageFolderPath, image.imageName);
+      console.log(`Attempting to delete image at: ${imagePath}`); // Log the full image path
+
+      return fs.promises.access(imagePath, fs.constants.F_OK)
+        .then(() => {
+          console.log(`File exists. Proceeding to delete: ${imagePath}`);
+          return fs.promises.unlink(imagePath);
+        })
+        .then(() => {
+          console.log(`Successfully deleted image: ${image.imageName}`);
+        })
+        .catch((err) => {
+          if (err.code === 'ENOENT') {
+            console.warn(`Image ${image.imageName} not found at ${imagePath}`);
+          } else {
+            console.error(`Failed to delete image ${image.imageName}:`, err);
+          }
+        });
+    });
+
+    // Wait for all image deletion promises to resolve
+    if (imageDeletePromises && imageDeletePromises.length > 0) {
+      await Promise.all(imageDeletePromises);
+    } else {
+      console.log('No images to delete');
+    }
+
+    // Delete the project from the database
+    await Projects.destroy({
+      where: { id: projectId },
+    });
+
+    return res.status(200).json({
+      message: 'Project and associated images deleted successfully',
+    });
+};
+
+
+
+
 
 
 export const weAchieved
