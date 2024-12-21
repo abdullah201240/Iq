@@ -35,12 +35,26 @@ const ViewApplicantsTable: React.FC<ApplyFromProps> = ({ jobId }) => {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [rejectedModalOpen, setRejectedModalOpen] = useState(false);
+  const [finalizedModalOpen, setFinalizedModal] = useState(false);
+
+
   const [interviewDate, setInterviewDate] = useState('');
   const [senderName, setSenderName] = useState('');
   const [senderPosition, setSenderPosition] = useState('');
   const [senderInfo, setSenderInfo] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [offerExpirationDate, setOfferExpirationDate] = useState('');
 
-  
+  const [uploadOfferLetter, setUploadOfferLetter] = useState('');
+  const [finalizedEmail, setFinalizedEmail] = useState('');
+  const [finalizedName, setFinalizedName] = useState('');
+
+
+
+
+
+
+
   // Fetch data from the API
   useEffect(() => {
     const checkSession = async () => {
@@ -163,22 +177,34 @@ const ViewApplicantsTable: React.FC<ApplyFromProps> = ({ jobId }) => {
   const closeRejectedModal = () => {
     setRejectedModalOpen(false);
   };
+  const openFinalizedModal = (email: string, name: string) => {
+    setFinalizedEmail(email)
+    setFinalizedName(name)
+    setFinalizedModal(true);
+  };
+
+  const closeFinalizedModal = () => {
+    setFinalizedModal(false);
+  };
 
 
   // Send email for shortlisted candidates
   const sendShortlistedEmail = async () => {
+    const storedUserInfo = localStorage.getItem('sessionToken');
+    if (!storedUserInfo) return;
 
     try {
-      const response = await fetch('/api/sendEmail', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/Shortlistedemail`, {
         method: 'POST',
         headers: {
+          Authorization: `Bearer ${storedUserInfo}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           interviewDate,
+          jobId,
           senderName,
           senderPosition,
-          status: 'ShortListed',
         }),
       });
 
@@ -198,17 +224,19 @@ const ViewApplicantsTable: React.FC<ApplyFromProps> = ({ jobId }) => {
 
   // Send email for rejected candidates
   const sendRejectedEmail = async () => {
-
+    const storedUserInfo = localStorage.getItem('sessionToken');
+    if (!storedUserInfo) return;
     try {
-      const response = await fetch('/api/sendEmail', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/RejectedEmail`, {
         method: 'POST',
         headers: {
+          Authorization: `Bearer ${storedUserInfo}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          jobId,
           senderName,
           senderPosition,
-          status: 'Rejected',
         }),
       });
 
@@ -226,7 +254,56 @@ const ViewApplicantsTable: React.FC<ApplyFromProps> = ({ jobId }) => {
     }
   };
 
+  const sendFinalizedEmail = async () => {
+    const storedUserInfo = localStorage.getItem('sessionToken');
+    if (!storedUserInfo) return;
+    if (!uploadOfferLetter) {
+      toast.error('Please upload an offer letter');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('jobId', jobId || '');
+    formData.append('senderName', senderName);
+    formData.append('senderPosition', senderPosition);
+    formData.append('senderInfo', senderInfo);
+    formData.append('startDate', startDate);
+    formData.append('offerExpirationDate', offerExpirationDate);
+    formData.append('resume', uploadOfferLetter);
+    formData.append('email', finalizedEmail);
+     formData.append('candidateName', finalizedName);
 
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/FinalizedEmail`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${storedUserInfo}`,
+          'Content-Type': 'multipart/form-data',
+        },
+        body: JSON.stringify({
+          jobId,
+          senderName,
+          senderPosition,
+          senderInfo,
+          startDate,
+          offerExpirationDate,
+          resume: uploadOfferLetter
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Rejected email sent successfully!');
+        closeRejectedModal();
+      } else {
+        toast.error('Failed to send rejected email.');
+      }
+    } catch (error) {
+      if (error) {
+        toast.error('Error sending email.');
+
+      }
+    }
+  };
   if (loading) {
     return <p>Loading...</p>;
   }
@@ -362,89 +439,297 @@ const ViewApplicantsTable: React.FC<ApplyFromProps> = ({ jobId }) => {
         </button>
       </div>
 
+      <div>
+        <h1 className='text-center mt-10 text-3xl mb-10'>Finalized Candidates</h1>
+
+        <table className="w-full text-sm text-left rtl:text-right text-white dark:text-white">
+          <thead className="text-xs text-white uppercase bg-gray-50 dark:bg-gray-700 dark:text-white">
+            <tr>
+              <th scope="col" className="px-6 py-3">
+                Name
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Email
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Phone
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Address
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Education
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Experience
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Salary
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Portfolio
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Resume
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Action
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {teams
+              .filter((team) => team.status === 'Finalized') // Filter for Finalized status
+              .map((team) => (
+                <tr key={team.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                  <td className="px-6 py-4 text-gray-900 dark:text-white">{team.name}</td>
+                  <td className="px-6 py-4 text-white">{team.email}</td>
+                  <td className="px-6 py-4 text-white">{team.phone}</td>
+                  <td className="px-6 py-4 text-white">{team.address}</td>
+                  <td className="px-6 py-4 text-white">{team.education}</td>
+                  <td className="px-6 py-4 text-white">{team.experience}</td>
+                  <td className="px-6 py-4 text-white">{team.salary}</td>
+
+                  <td className="px-6 py-4 text-white">
+
+                    <Link href={`${team.portfolio}`} target="_blank" rel="noopener noreferrer">Link</Link>
+                  </td>
+                  <td className="px-6 py-4 text-white">
+                    <Link href={`${process.env.NEXT_PUBLIC_API_URL_IMAGE}/uploadPdf/${team.resume}`} className="text-blue-500">
+                      View Resume
+                    </Link>
+                  </td>
+                  <td className="px-6 py-4 text-white">
+                    <button className='bg-blue-600 text-lg'
+                      onClick={() => openFinalizedModal(team.email, team.name)}
+                    >
+                      Send Email
+                    </button>
+
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+
+
+      </div>
 
 
 
       {/* Modal for Shortlisted Email */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center text-center ">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-1/2">
-            <h3 className="text-lg font-semibold mb-4">Send Shortlisted Email</h3>
-            <div>
-              <label className="block mb-2">Interview Date</label>
-              <input
-                type="date"
-                value={interviewDate}
-                onChange={(e) => setInterviewDate(e.target.value)}
-                className="mb-4 p-2 border rounded"
-              />
-              <label className="block mb-2">Sender Name</label>
-              <input
-                type="text"
-                value={senderName}
-                onChange={(e) => setSenderName(e.target.value)}
-                className="mb-4 p-2 border rounded"
-              />
-              <label className="block mb-2">Sender Position</label>
-              <input
-                type="text"
-                value={senderPosition}
-                onChange={(e) => setSenderPosition(e.target.value)}
-                className="mb-4 p-2 border rounded"
-              />
-               <label className="block mb-2">Contact Info:</label>
-              <input
-                type="text"
-                value={senderInfo}
-                onChange={(e) => setSenderInfo(e.target.value)}
-                className="mb-4 p-2 border rounded"
-              />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-2xl w-11/12 sm:w-2/3 lg:w-1/2">
+            <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">
+              Send Shortlisted Email
+            </h3>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Interview Date
+                </label>
+                <input
+                  type="date"
+                  value={interviewDate}
+                  onChange={(e) => setInterviewDate(e.target.value)}
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Sender Name
+                </label>
+                <input
+                  type="text"
+                  value={senderName}
+                  onChange={(e) => setSenderName(e.target.value)}
+                  placeholder="Enter sender's name"
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Sender Position
+                </label>
+                <input
+                  type="text"
+                  value={senderPosition}
+                  onChange={(e) => setSenderPosition(e.target.value)}
+                  placeholder="Enter sender's position"
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Contact Info
+                </label>
+                <input
+                  type="text"
+                  value={senderInfo}
+                  onChange={(e) => setSenderInfo(e.target.value)}
+                  placeholder="Enter contact information"
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             </div>
-            <div className="flex justify-between mt-4">
-              <button onClick={sendShortlistedEmail} className="bg-blue-500 text-white py-2 px-4 rounded">Send Email</button>
-              <button onClick={closeModal} className="bg-gray-500 text-white py-2 px-4 rounded">Cancel</button>
+            <div className="flex justify-between mt-8">
+              <button
+                onClick={sendShortlistedEmail}
+                className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-semibold shadow-lg transition duration-300"
+              >
+                Send Email
+              </button>
+              <button
+                onClick={closeModal}
+                className="bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg transition duration-300"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       )}
+
 
       {/* Modal for Rejected Email */}
       {rejectedModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-1/2">
-            <h3 className="text-lg font-semibold mb-4">Send Rejected Email</h3>
-            <div>
-              <label className="block mb-2">Sender Name</label>
-              <input
-                type="text"
-                value={senderName}
-                onChange={(e) => setSenderName(e.target.value)}
-                className="mb-4 p-2 border rounded"
-              />
-              <label className="block mb-2">Sender Position</label>
-              <input
-                type="text"
-                value={senderPosition}
-                onChange={(e) => setSenderPosition(e.target.value)}
-                className="mb-4 p-2 border rounded"
-              />
-              <label className="block mb-2">Contact Info:</label>
-              <input
-                type="text"
-                value={senderInfo}
-                onChange={(e) => setSenderInfo(e.target.value)}
-                className="mb-4 p-2 border rounded"
-              />
-
-
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-2xl w-11/12 sm:w-2/3 lg:w-1/2">
+            <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">Send Rejected Email</h3>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">Sender Name</label>
+                <input
+                  type="text"
+                  value={senderName}
+                  onChange={(e) => setSenderName(e.target.value)}
+                  placeholder="Enter sender's name"
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">Sender Position</label>
+                <input
+                  type="text"
+                  value={senderPosition}
+                  onChange={(e) => setSenderPosition(e.target.value)}
+                  placeholder="Enter sender's position"
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">Contact Info</label>
+                <input
+                  type="text"
+                  value={senderInfo}
+                  onChange={(e) => setSenderInfo(e.target.value)}
+                  placeholder="Enter contact information"
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+              </div>
             </div>
-            <div className="flex justify-between mt-4">
-              <button onClick={sendRejectedEmail} className="bg-red-500 text-white py-2 px-4 rounded">Send Email</button>
-              <button onClick={closeRejectedModal} className="bg-gray-500 text-white py-2 px-4 rounded">Cancel</button>
+            <div className="flex justify-between mt-8">
+              <button
+                onClick={sendRejectedEmail}
+                className="bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg font-semibold shadow-lg transition duration-300"
+              >
+                Send Email
+              </button>
+              <button
+                onClick={closeRejectedModal}
+                className="bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg transition duration-300"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       )}
+
+
+
+      {finalizedModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-2xl w-11/12 sm:w-2/3 lg:w-1/2">
+            <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">Send Finalized Email</h3>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">Sender Name</label>
+                <input
+                  type="text"
+                  value={senderName}
+                  onChange={(e) => setSenderName(e.target.value)}
+                  placeholder="Enter sender's name"
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">Sender Position</label>
+                <input
+                  type="text"
+                  value={senderPosition}
+                  onChange={(e) => setSenderPosition(e.target.value)}
+                  placeholder="Enter sender's position"
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">Contact Info</label>
+                <input
+                  type="text"
+                  value={senderInfo}
+                  onChange={(e) => setSenderInfo(e.target.value)}
+                  placeholder="Enter contact information"
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">Start Date</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">Offer Expiration Date</label>
+                <input
+                  type="date"
+                  value={offerExpirationDate}
+                  onChange={(e) => setOfferExpirationDate(e.target.value)}
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">Upload Offer Letter</label>
+                <input
+                  type="file"
+                  onChange={(e) => setUploadOfferLetter(e.target.value)}
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex justify-between mt-8">
+              <button
+                onClick={sendFinalizedEmail}
+                className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-semibold shadow-lg transition duration-300"
+              >
+                Send Email
+              </button>
+              <button
+                onClick={closeFinalizedModal}
+                className="bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg transition duration-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
 
 

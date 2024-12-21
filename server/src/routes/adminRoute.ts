@@ -1,9 +1,10 @@
 import express from 'express';
-import { aboutUs, category, createBestProject, createBlog, createClientHandler, createJob, createMainServices, createMainServicesCategory, createMainServicesSubCategory, createProject, createStory, deleteAbout, deleteBestProject, deleteBlog, deleteCategory, deleteClient, deleteJob, deleteMainServices, deleteMainServicesCategory, deleteMainServicesSubCategory, deleteProject, deleteServices, deleteStory, deleteTeam, deleteTestimonial, deleteWeAchieved, getAllMainServicesCategories, getMainServices, getMainServicesCategoryById, getMainServicesSubCategory, getMainServicesSubCategoryById, jobApplyById, services, Shortlistedemail, team, testimonial, updateAbout, updateApplicantStatus, updateJob, updateServices, updateTeam, updateTestimonial, updateWeAchieved, viewAbout, viewAboutById, viewBestProject, viewBlog, viewCategory, viewCategoryById, viewClient, viewContacts, viewJob, viewProjects, viewServices, viewServicesById, viewStory, viewTeam, viewTeamById, viewTestimonial, viewTestimonialById, viewWeAchieved, viewWeAchievedById, weAchieved } from '../controllers/adminController'; // Adjust the import path as needed
+import { aboutUs, category, createBestProject, createBlog, createClientHandler, createJob, createMainServices, createMainServicesCategory, createMainServicesSubCategory, createProject, createStory, deleteAbout, deleteBestProject, deleteBlog, deleteCategory, deleteClient, deleteJob, deleteMainServices, deleteMainServicesCategory, deleteMainServicesSubCategory, deleteProject, deleteServices, deleteStory, deleteTeam, deleteTestimonial, deleteWeAchieved, FinalizedEmail, getAllMainServicesCategories, getMainServices, getMainServicesCategoryById, getMainServicesSubCategory, getMainServicesSubCategoryById, jobApplyById, RejectedEmail, services, Shortlistedemail, team, testimonial, updateAbout, updateApplicantStatus, updateJob, updateServices, updateTeam, updateTestimonial, updateWeAchieved, viewAbout, viewAboutById, viewBestProject, viewBlog, viewCategory, viewCategoryById, viewClient, viewContacts, viewJob, viewProjects, viewServices, viewServicesById, viewStory, viewTeam, viewTeamById, viewTestimonial, viewTestimonialById, viewWeAchieved, viewWeAchievedById, weAchieved } from '../controllers/adminController'; // Adjust the import path as needed
 import { errorHandler } from '../error-handler';
 import authMiddleware from '../middleware/auth';
 import { compressImageMiddlewareSeo, uploadSeo } from '../middleware/uploadSeo';
 import { convertToWebP, uploadMul } from '../middleware/uploadMiddleware';
+import { uploadPdf } from '../middleware/uploadPdf';
 
 const router = express.Router();
 
@@ -230,6 +231,10 @@ router.get('/jobApply/:id/:page',authMiddleware, errorHandler(jobApplyById));
 router.put('/jobApply/:applicantId/:status', authMiddleware , errorHandler(updateApplicantStatus));
 
 router.post('/Shortlistedemail', authMiddleware, errorHandler(Shortlistedemail));
+router.post('/RejectedEmail', authMiddleware, errorHandler(RejectedEmail));
+
+router.post('/FinalizedEmail',uploadPdf.single('resume'), errorHandler(FinalizedEmail));
+
 
 // Create a new Category
 router.post('/mainServicesCategory', authMiddleware,errorHandler(createMainServicesCategory));

@@ -23,7 +23,7 @@ import Blog from '../models/blog';
 import Job from '../models/job';
 import ApplyList from '../models/applyList';
 import cache from './cache'; // Import the centralized cache instance
-import sendEmail from './emailController';
+import sendEmail, { Attachment } from './emailController';
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
@@ -822,62 +822,62 @@ export const viewCategoryById = async (req: Request, res: Response, next: NextFu
 
 
 export const createProject = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  
-    // Validate request body
-    const validation = projectSchema.safeParse(req.body);
-    if (!validation.success) {
-      return next(new Error('Validation Error: ' + JSON.stringify(validation.error.errors)));
-    }
 
-    const { name, categoryId } = req.body;
+  // Validate request body
+  const validation = projectSchema.safeParse(req.body);
+  if (!validation.success) {
+    return next(new Error('Validation Error: ' + JSON.stringify(validation.error.errors)));
+  }
 
-    // Type assertion for req.files
-    const files = req.files as {
-      [fieldname: string]: Express.Multer.File[];
-    };
+  const { name, categoryId } = req.body;
 
-    // Extract theme image and additional images
-    let themeImage = '';
-    const additionalFiles: Express.Multer.File[] = [];
+  // Type assertion for req.files
+  const files = req.files as {
+    [fieldname: string]: Express.Multer.File[];
+  };
 
-    if (files['themeImage'] && files['themeImage'].length > 0) {
-      themeImage = files['themeImage'][0].path;
-    }
+  // Extract theme image and additional images
+  let themeImage = '';
+  const additionalFiles: Express.Multer.File[] = [];
 
-    if (files['images'] && files['images'].length > 0) {
-      additionalFiles.push(...files['images']);
-    }
+  if (files['themeImage'] && files['themeImage'].length > 0) {
+    themeImage = files['themeImage'][0].path;
+  }
 
-    // Create project entry
-    const project = await Projects.create({
-      name,
-      themeImage,
-      categoryId,
-    });
+  if (files['images'] && files['images'].length > 0) {
+    additionalFiles.push(...files['images']);
+  }
 
-    // Create project images entries if additional images exist
-    if (additionalFiles.length > 0) {
-      const imageRecords = additionalFiles.map((file) => ({
-        imageName: file.filename,
-        projectId: project.id,
-      }));
+  // Create project entry
+  const project = await Projects.create({
+    name,
+    themeImage,
+    categoryId,
+  });
 
-      await ProjectImage.bulkCreate(imageRecords);
-    }
+  // Create project images entries if additional images exist
+  if (additionalFiles.length > 0) {
+    const imageRecords = additionalFiles.map((file) => ({
+      imageName: file.filename,
+      projectId: project.id,
+    }));
 
-    // Invalidate project cache
-    cache.del('projects');
+    await ProjectImage.bulkCreate(imageRecords);
+  }
 
-    // Send response
-    res.status(201).json({
-      message: 'Project created successfully',
-      project: {
-          ...project, // your project data
-          project: additionalFiles.map((file) => ({
-              imageName: file.filename, // Assuming these are image file names
-          })),
-      },
-      images: additionalFiles.map((file) => file.filename),
+  // Invalidate project cache
+  cache.del('projects');
+
+  // Send response
+  res.status(201).json({
+    message: 'Project created successfully',
+    project: {
+      ...project, // your project data
+      project: additionalFiles.map((file) => ({
+        imageName: file.filename, // Assuming these are image file names
+      })),
+    },
+    images: additionalFiles.map((file) => file.filename),
   });
 };
 
@@ -917,76 +917,76 @@ export const viewProjects = async (req: Request, res: Response, next: NextFuncti
 export const deleteProject = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   const projectId = req.params.id;
 
- 
-    // Find the project with its associated images
-    const data = await Projects.findOne({
-      where: { id: projectId },
-      include: [
-        {
-          model: ProjectImage,
-          as: 'project', // Alias for the associated images
-          attributes: ['imageName'], // Only retrieve the image names
-        },
-      ],
-    });
 
-    // If project not found, return 404
-    if (!data) {
-      return res.status(404).json({
-        message: 'Project not found',
+  // Find the project with its associated images
+  const data = await Projects.findOne({
+    where: { id: projectId },
+    include: [
+      {
+        model: ProjectImage,
+        as: 'project', // Alias for the associated images
+        attributes: ['imageName'], // Only retrieve the image names
+      },
+    ],
+  });
+
+  // If project not found, return 404
+  if (!data) {
+    return res.status(404).json({
+      message: 'Project not found',
+    });
+  }
+
+  console.log('Project found:', data);
+
+  // Check if project has images
+  if (!data.project || data.project.length === 0) {
+    console.log('No images associated with this project');
+  } else {
+    console.log('Images associated with this project:', data.project);
+  }
+
+  // Define the path to the image folder
+  const imageFolderPath = path.join(__dirname, '../../upload'); // Adjust folder path as needed
+  console.log('Image folder path:', imageFolderPath);
+  console.log('Full image folder path:', path.resolve(imageFolderPath));
+
+  const imageDeletePromises = data.project?.map((image: ProjectImage) => {
+    const imagePath = path.join(imageFolderPath, image.imageName);
+    console.log(`Attempting to delete image at: ${imagePath}`); // Log the full image path
+
+    return fs.promises.access(imagePath, fs.constants.F_OK)
+      .then(() => {
+        console.log(`File exists. Proceeding to delete: ${imagePath}`);
+        return fs.promises.unlink(imagePath);
+      })
+      .then(() => {
+        console.log(`Successfully deleted image: ${image.imageName}`);
+      })
+      .catch((err) => {
+        if (err.code === 'ENOENT') {
+          console.warn(`Image ${image.imageName} not found at ${imagePath}`);
+        } else {
+          console.error(`Failed to delete image ${image.imageName}:`, err);
+        }
       });
-    }
+  });
 
-    console.log('Project found:', data);
+  // Wait for all image deletion promises to resolve
+  if (imageDeletePromises && imageDeletePromises.length > 0) {
+    await Promise.all(imageDeletePromises);
+  } else {
+    console.log('No images to delete');
+  }
 
-    // Check if project has images
-    if (!data.project || data.project.length === 0) {
-      console.log('No images associated with this project');
-    } else {
-      console.log('Images associated with this project:', data.project);
-    }
+  // Delete the project from the database
+  await Projects.destroy({
+    where: { id: projectId },
+  });
 
-    // Define the path to the image folder
-    const imageFolderPath = path.join(__dirname, '../../upload'); // Adjust folder path as needed
-    console.log('Image folder path:', imageFolderPath);
-    console.log('Full image folder path:', path.resolve(imageFolderPath));
-
-    const imageDeletePromises = data.project?.map((image: ProjectImage) => {
-      const imagePath = path.join(imageFolderPath, image.imageName);
-      console.log(`Attempting to delete image at: ${imagePath}`); // Log the full image path
-
-      return fs.promises.access(imagePath, fs.constants.F_OK)
-        .then(() => {
-          console.log(`File exists. Proceeding to delete: ${imagePath}`);
-          return fs.promises.unlink(imagePath);
-        })
-        .then(() => {
-          console.log(`Successfully deleted image: ${image.imageName}`);
-        })
-        .catch((err) => {
-          if (err.code === 'ENOENT') {
-            console.warn(`Image ${image.imageName} not found at ${imagePath}`);
-          } else {
-            console.error(`Failed to delete image ${image.imageName}:`, err);
-          }
-        });
-    });
-
-    // Wait for all image deletion promises to resolve
-    if (imageDeletePromises && imageDeletePromises.length > 0) {
-      await Promise.all(imageDeletePromises);
-    } else {
-      console.log('No images to delete');
-    }
-
-    // Delete the project from the database
-    await Projects.destroy({
-      where: { id: projectId },
-    });
-
-    return res.status(200).json({
-      message: 'Project and associated images deleted successfully',
-    });
+  return res.status(200).json({
+    message: 'Project and associated images deleted successfully',
+  });
 };
 
 
@@ -1540,29 +1540,37 @@ export const Shortlistedemail = async (req: Request, res: Response): Promise<Res
     jobId,
     senderName,
     senderPosition,
-    jobTitle
   } = req.body;
-  const companyName = 'IQ Architects'
-  try {
-    // Fetch shortlisted applicants for the given jobId
-    const shortlistedApplicants = await ApplyList.findAll({
-      where: {
-        jobId: jobId,
-        status: 'Shortlisted',
-      },
+  const companyName = 'IQ Architects Ltd'
+
+  // Fetch shortlisted applicants for the given jobId
+  const shortlistedApplicants = await ApplyList.findAll({
+    where: {
+      jobId: jobId,
+      status: 'Shortlisted',
+    },
+
+  });
+  const job = await Job.findOne({ where: { id: jobId } });
+
+
+  if (!job) {
+    return res.status(404).json({
+      message: 'Job not found for the given job ID.',
     });
+  }
 
+  const jobTitle = job.position;
+  // Check if there are shortlisted applicants
+  if (shortlistedApplicants.length === 0) {
+    return res.status(404).json({
+      message: 'No shortlisted applicants found for the given job ID.',
+    });
+  }
 
-    // Check if there are shortlisted applicants
-    if (shortlistedApplicants.length === 0) {
-      return res.status(404).json({
-        message: 'No shortlisted applicants found for the given job ID.',
-      });
-    }
-
-    // Loop through each shortlisted applicant to send emails
-    await Promise.all(shortlistedApplicants.map(async (applicant) => {
-      const emailContent = `
+  // Loop through each shortlisted applicant to send emails
+  await Promise.all(shortlistedApplicants.map(async (applicant) => {
+    const emailContent = `
         <div style="font-family: Arial, sans-serif; line-height: 1.5; margin: 20px; color: #333;">
             <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9;">
                 <p>Dear <strong>${applicant.name}</strong>,</p>
@@ -1585,25 +1593,196 @@ export const Shortlistedemail = async (req: Request, res: Response): Promise<Res
         </div>
       `;
 
-      await sendEmail(
-        applicant.email,
-        `Congratulations! You’ve Been Shortlisted for ${applicant.jobId} at ${companyName}`,
-        '',
-        emailContent
-      );
-    }));
+    await sendEmail(
+      applicant.email,
+      `Congratulations! You’ve Been Shortlisted for ${applicant.jobId} at ${companyName}`,
+      '',
+      emailContent
+    );
+  }));
 
-    return res.status(200).json({
-      message: 'Shortlisted emails sent successfully to all applicants.',
-    });
-  } catch (error: any) {
-    console.error('Error sending emails:', error);
-    return res.status(500).json({
-      message: 'Error sending shortlisted emails',
-      error: error.message,
+  return res.status(200).json({
+    message: 'Shortlisted emails sent successfully to all applicants.',
+  });
+};
+
+
+
+export const RejectedEmail = async (req: Request, res: Response): Promise<Response> => {
+  // Extracting data from the request body
+  const {
+    jobId,
+    senderName,
+    senderPosition,
+  } = req.body;
+  const companyName = 'IQ Architects Ltd'
+
+  // Fetch shortlisted applicants for the given jobId
+  const shortlistedApplicants = await ApplyList.findAll({
+    where: {
+      jobId: jobId,
+      status: 'Rejected',
+    },
+
+  });
+  const job = await Job.findOne({ where: { id: jobId } });
+
+
+  if (!job) {
+    return res.status(404).json({
+      message: 'Job not found for the given job ID.',
     });
   }
+
+  const jobTitle = job.position;
+  // Check if there are shortlisted applicants
+  if (shortlistedApplicants.length === 0) {
+    return res.status(404).json({
+      message: 'No shortlisted applicants found for the given job ID.',
+    });
+  }
+
+  // Loop through each shortlisted applicant to send emails
+  await Promise.all(shortlistedApplicants.map(async (applicant) => {
+    const emailContent = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.5; margin: 20px; color: #333;">
+      <p>Dear <strong>${applicant.name}</strong>,</p>
+
+      <p>Thank you for your interest in the <strong>${jobTitle}</strong> position at <strong>${companyName}</strong>. We appreciate the time and effort you invested in the application process.</p>
+
+      <p>After careful review, we regret to inform you that we have decided to move forward with other candidates at this time. While your qualifications are impressive, we feel they do not fully match the requirements of this role.</p>
+
+      <p>We encourage you to apply for future opportunities that may be a better fit. We will keep your details on file and notify you if a suitable position arises.</p>
+
+      <p>Thank you once again for your interest in <strong>${companyName}</strong>, and we wish you the best in your job search.</p>
+
+      <p>Best regards,<br>
+      <strong>${senderName}</strong><br>
+      ${senderPosition}<br>
+      <strong>${companyName}</strong></p>
+  </div>
+
+      `;
+
+    await sendEmail(
+      applicant.email,
+      `Application Update for ${jobTitle} at ${companyName}`,
+      '',
+      emailContent
+    );
+  }));
+
+  return res.status(200).json({
+    message: 'Shortlisted emails sent successfully to all applicants.',
+  });
 };
+
+
+
+
+
+export const FinalizedEmail = async (req: Request, res: Response): Promise<Response> => {
+
+  try {
+    // Extracting data from the request body
+    const {
+      candidateName,
+      contactInfo,
+      senderName,
+      senderPosition,
+      email,
+      startDate,
+      offerExpirationDate,
+      jobId,
+    } = req.body;
+
+    const companyName = 'IQ Architects Ltd';
+
+    // Validation: Ensure all required fields are provided
+    if (!candidateName || !contactInfo || !senderName || !senderPosition || !email || !startDate || !offerExpirationDate || !jobId) {
+      return res.status(400).json({ message: 'All fields are required.' });
+    }
+
+    // Fetch the job from the database
+    const job = await Job.findOne({ where: { id: jobId } });
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found for the given job ID.' });
+    }
+
+    const jobTitle = job.position;
+
+    // Validate file upload
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded. Please upload the offer letter PDF.' });
+    }
+
+    const offerLetterPath = req.file.path;
+
+    // Generate the email content
+    const emailContent = `
+      <html>
+      <body>
+        <p>Dear ${candidateName},</p>
+    
+        <p>We are excited to offer you the position of <strong>${jobTitle}</strong> at <strong>${companyName}</strong>! After a thorough selection process, we believe you are the perfect fit for our team, and we can’t wait to have you on board.</p>
+    
+        <h3>Employment Offer:</h3>
+        <ul>
+          <li><strong>Job Title:</strong> ${jobTitle}</li>
+          <li><strong>Start Date:</strong> ${startDate}</li>
+        </ul>
+    
+        <p>Please review the attached offer letter, which contains the details of your employment. Kindly sign and return the offer by <strong>${offerExpirationDate}</strong>.</p>
+    
+        <p>If you have any questions, don’t hesitate to reach out. We are thrilled to welcome you to our team!</p>
+    
+        <p>Best regards,<br/>
+        ${senderName}<br/>
+        ${contactInfo}<br/>
+        ${senderPosition}<br/>
+        ${companyName}</p>
+      </body>
+      </html>
+    `;
+
+    // Read the offer letter file
+    const offerLetterBuffer = fs.readFileSync(offerLetterPath);
+
+    // Create an attachment for the email
+    const attachments: Attachment[] = [
+      {
+        filename: 'Offer_Letter.pdf',
+        content: offerLetterBuffer,
+      },
+    ];
+
+    // Send the email
+    await sendEmail(
+      email,
+      `Congratulations! Offer of Employment for ${jobTitle} at ${companyName}`,
+      '', // Plain text (optional)
+      emailContent,
+      attachments
+    );
+
+    // Return success response
+    return res.status(200).json({
+      message: `Finalized email sent successfully to ${candidateName}.`,
+    });
+  } catch (error: any) {
+    console.error('Error in FinalizedEmail API:', error);
+    return res.status(500).json({ message: 'An error occurred while processing your request.', error: error.message });
+  } finally {
+    // Cleanup uploaded file
+    if (req.file) {
+      const filePath = path.resolve(req.file.path);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+  }
+};
+
 
 
 
@@ -1686,212 +1865,212 @@ export const compressAllImages = async (req: Request, res: Response) => {
 
 // Create a new Category
 export const createMainServicesCategory = async (req: Request, res: Response) => {
-  
-    const { name } = req.body;
 
-    // Check for required fields
-    if (!name) {
-      return res.status(400).json({ message: 'Name is required.' });
-    }
+  const { name } = req.body;
 
-    const newCategory = await MainServicesCategory.create({ name });
+  // Check for required fields
+  if (!name) {
+    return res.status(400).json({ message: 'Name is required.' });
+  }
 
-    return res.status(201).json({
-      message: 'Category created successfully.',
-      data: newCategory,
-    });
-  
+  const newCategory = await MainServicesCategory.create({ name });
+
+  return res.status(201).json({
+    message: 'Category created successfully.',
+    data: newCategory,
+  });
+
 };
 // Get all Categories with SubCategories
 export const getAllMainServicesCategories = async (_req: Request, res: Response): Promise<Response> => {
-  
-    // Fetch all main service categories with associated subcategories
-    const categories = await MainServicesCategory.findAll({
-      include: [
-        {
-          association: 'subCategories', // Ensure this matches your Sequelize association name
-          attributes: ['id', 'name'], // Fetch only relevant fields
-        },
-      ],
-    });
 
-    return res.status(200).json({
-      message: 'Categories fetched successfully.',
-      data: categories,
-    });
+  // Fetch all main service categories with associated subcategories
+  const categories = await MainServicesCategory.findAll({
+    include: [
+      {
+        association: 'subCategories', // Ensure this matches your Sequelize association name
+        attributes: ['id', 'name'], // Fetch only relevant fields
+      },
+    ],
+  });
+
+  return res.status(200).json({
+    message: 'Categories fetched successfully.',
+    data: categories,
+  });
 };
 
 // Get Category by ID with SubCategories
 export const getMainServicesCategoryById = async (req: Request, res: Response) => {
-  
-    const { id } = req.params;
 
-    const category = await MainServicesCategory.findByPk(id, {
-      include: [{ model: MainServicesSubCategory, as: 'subCategories' }],
-    });
+  const { id } = req.params;
 
-    if (!category) {
-      return res.status(404).json({ message: 'Category not found.' });
-    }
+  const category = await MainServicesCategory.findByPk(id, {
+    include: [{ model: MainServicesSubCategory, as: 'subCategories' }],
+  });
 
-    return res.status(200).json({
-      message: 'Category fetched successfully.',
-      data: category,
-    });
-  
+  if (!category) {
+    return res.status(404).json({ message: 'Category not found.' });
+  }
+
+  return res.status(200).json({
+    message: 'Category fetched successfully.',
+    data: category,
+  });
+
 };
 // Delete Category by ID
 export const deleteMainServicesCategory = async (req: Request, res: Response) => {
 
-    const { id } = req.params;
+  const { id } = req.params;
 
-    const category = await MainServicesCategory.findByPk(id);
+  const category = await MainServicesCategory.findByPk(id);
 
-    if (!category) {
-      return res.status(404).json({ message: 'Category not found.' });
-    }
+  if (!category) {
+    return res.status(404).json({ message: 'Category not found.' });
+  }
 
-    await category.destroy();
+  await category.destroy();
 
-    return res.status(200).json({ message: 'Category deleted successfully.' });
-  
+  return res.status(200).json({ message: 'Category deleted successfully.' });
+
 };
 
 // Create a new SubCategory
 export const createMainServicesSubCategory = async (req: Request, res: Response) => {
-  
-    const { name, categoryId } = req.body;
 
-    // Check for required fields
-    if (!name || !categoryId) {
-      return res.status(400).json({ message: 'Name and Category ID are required.' });
-    }
+  const { name, categoryId } = req.body;
 
-    const newSubCategory = await MainServicesSubCategory.create({
-      name,
-      categoryId,
-    });
+  // Check for required fields
+  if (!name || !categoryId) {
+    return res.status(400).json({ message: 'Name and Category ID are required.' });
+  }
 
-    return res.status(201).json({
-      message: 'SubCategory created successfully.',
-      data: newSubCategory,
-    });
+  const newSubCategory = await MainServicesSubCategory.create({
+    name,
+    categoryId,
+  });
+
+  return res.status(201).json({
+    message: 'SubCategory created successfully.',
+    data: newSubCategory,
+  });
 };
 
 
 
 
 export const getMainServicesSubCategory = async (req: Request, res: Response) => {
- 
-    const subCategories = await MainServicesSubCategory.findAll({
-      include: [
-        {
-          model: MainServicesCategory,
-          as: 'category', // Alias must match the one in associations
-          attributes: ['id', 'name'], // Fetch only relevant fields
-        },
-      ],
-    });
 
-    return res.status(200).json({
-      message: 'SubCategory fetched successfully.',
-      data: subCategories,
-    });
-  
+  const subCategories = await MainServicesSubCategory.findAll({
+    include: [
+      {
+        model: MainServicesCategory,
+        as: 'category', // Alias must match the one in associations
+        attributes: ['id', 'name'], // Fetch only relevant fields
+      },
+    ],
+  });
+
+  return res.status(200).json({
+    message: 'SubCategory fetched successfully.',
+    data: subCategories,
+  });
+
 };
 
 
 // Get SubCategory by ID
 export const getMainServicesSubCategoryById = async (req: Request, res: Response) => {
-  
-    const { id } = req.params;
 
-    const subCategory = await MainServicesSubCategory.findAll({
-      where: {
-        categoryId: id,
-      },
-    });
-    
-    if (!subCategory) {
-      return res.status(404).json({ message: 'SubCategory not found.' });
-    }
+  const { id } = req.params;
 
-    return res.status(200).json({
-      message: 'SubCategory fetched successfully.',
-      data: subCategory,
-    });
-  
+  const subCategory = await MainServicesSubCategory.findAll({
+    where: {
+      categoryId: id,
+    },
+  });
+
+  if (!subCategory) {
+    return res.status(404).json({ message: 'SubCategory not found.' });
+  }
+
+  return res.status(200).json({
+    message: 'SubCategory fetched successfully.',
+    data: subCategory,
+  });
+
 };
 
 // Delete SubCategory by ID
 export const deleteMainServicesSubCategory = async (req: Request, res: Response) => {
- 
-    const { id } = req.params;
 
-    const subCategory = await MainServicesSubCategory.findByPk(id);
+  const { id } = req.params;
 
-    if (!subCategory) {
-      return res.status(404).json({ message: 'SubCategory not found.' });
-    }
+  const subCategory = await MainServicesSubCategory.findByPk(id);
 
-    await subCategory.destroy();
+  if (!subCategory) {
+    return res.status(404).json({ message: 'SubCategory not found.' });
+  }
 
-    return res.status(200).json({ message: 'SubCategory deleted successfully.' });
-  
+  await subCategory.destroy();
+
+  return res.status(200).json({ message: 'SubCategory deleted successfully.' });
+
 };
 
 
 // Create a new MainService
 export const createMainServices = async (req: Request, res: Response) => {
-  
-    const { subTitle, videoLink, description, categoryId, subCategoryId } = req.body;
 
-    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+  const { subTitle, videoLink, description, categoryId, subCategoryId } = req.body;
 
-    const logo = files['logo'] ? files['logo'][0].path : ''; // Check if 'image' exists in req.files
-    const backgroundImage = files['backgroundImage'] ? files['backgroundImage'][0].path : ''; // Check if 'image' exists in req.files
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-    // Check for required fields
-    if (!subTitle || !categoryId) {
-      return res.status(400).json({ message: 'SubTitle and Category ID are required.' });
-    }
+  const logo = files['logo'] ? files['logo'][0].path : ''; // Check if 'image' exists in req.files
+  const backgroundImage = files['backgroundImage'] ? files['backgroundImage'][0].path : ''; // Check if 'image' exists in req.files
 
-    // Create the new subcategory entry in the database
-    const newSubCategory = await MainServices.create({
-      subTitle,
-      videoLink,
-      description,
-      categoryId,
-      subCategoryId,
-      logo, 
-      backgroundImage
-    });
+  // Check for required fields
+  if (!subTitle || !categoryId) {
+    return res.status(400).json({ message: 'SubTitle and Category ID are required.' });
+  }
 
-    // Return success response
-    return res.status(201).json({
-      message: 'MainService created successfully.',
-      data: newSubCategory,
-    });
+  // Create the new subcategory entry in the database
+  const newSubCategory = await MainServices.create({
+    subTitle,
+    videoLink,
+    description,
+    categoryId,
+    subCategoryId,
+    logo,
+    backgroundImage
+  });
+
+  // Return success response
+  return res.status(201).json({
+    message: 'MainService created successfully.',
+    data: newSubCategory,
+  });
 };
 
 export const getMainServices = async (req: Request, res: Response) => {
- 
+
   const mainServices = await MainServices.findAll({
-      include: [
-        {
-          model: MainServicesCategory,
-          as: 'category', // Alias must match the one in associations
-          attributes: ['id', 'name'], // Fetch only relevant fields
-          
-        },
-        {
-          model: MainServicesSubCategory,
-          as: 'subCategory', // Alias must match the one in associations
-          attributes: ['id', 'name'], // Fetch only relevant fields
-          
-        },
-      ],
-    });
+    include: [
+      {
+        model: MainServicesCategory,
+        as: 'category', // Alias must match the one in associations
+        attributes: ['id', 'name'], // Fetch only relevant fields
+
+      },
+      {
+        model: MainServicesSubCategory,
+        as: 'subCategory', // Alias must match the one in associations
+        attributes: ['id', 'name'], // Fetch only relevant fields
+
+      },
+    ],
+  });
 
   return res.status(200).json({
     message: 'Main Services fetched successfully.',
@@ -1901,7 +2080,7 @@ export const getMainServices = async (req: Request, res: Response) => {
 };
 
 export const deleteMainServices = async (req: Request, res: Response) => {
- 
+
   const { id } = req.params;
   console.log(id)
 
